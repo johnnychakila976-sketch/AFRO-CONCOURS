@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inscription</title>
+</head>
+<body>
+
+  <h1>Créer un compte</h1>
+
+  <form id="signupForm">
+    <input type="text" id="nom" placeholder="Nom" required /><br><br>
+    <input type="email" id="email" placeholder="Email" required /><br><br>
+    <input type="password" id="password" placeholder="Mot de passe" required /><br><br>
+    <button type="submit">S'inscrire</button>
+  </form>
+
+  <p id="message"></p>
+
+  <script>
+    const form = document.getElementById("signupForm");
+    const message = document.getElementById("message");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const data = {
+        nom: document.getElementById("nom").value,
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value
+      };
+
+      try {
+        const response = await fetch("COLLE_ICI_TON_LIEN_GOOGLE_SCRIPT", {
+          method: "POST",
+          body: JSON.stringify(data),
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          message.textContent = "Compte créé avec succès !";
+          form.reset();
+        } else {
+          message.textContent = "Erreur : " + result.message;
+        }
+
+      } catch (error) {
+        message.textContent = "Erreur réseau : " + error;
+      }
+    });
+  </script>
+
+</body>
+</html>
