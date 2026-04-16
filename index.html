@@ -1,175 +1,205 @@
 <!doctype html>
 <html lang="fr" class="h-full">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Afro Concours 👑</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Afro Concours 👑</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
 
-<style>
-html,body{height:100%;margin:0;font-family:Outfit;}
-.hidden{display:none;}
-.admin-badge{position:fixed;bottom:10px;right:10px;background:#7c3aed;color:white;padding:8px 12px;border-radius:10px;font-size:12px;cursor:pointer}
-.panel{position:fixed;inset:0;background:#000000cc;display:none;align-items:center;justify-content:center;z-index:9999}
-.panel-box{background:#111;border:1px solid #444;padding:20px;border-radius:12px;width:90%;max-width:500px;color:white}
-</style>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    html, body { margin:0; padding:0; height:100%; font-family:Outfit; background:#0a0a0f; color:white; }
+    * { box-sizing:border-box; }
+
+    .hidden { display:none; }
+  </style>
 </head>
 
-<body class="bg-black text-white">
+<body>
 
-<!-- ADMIN BUTTON -->
-<div class="admin-badge" onclick="openAdmin()">Admin</div>
+<div id="app" class="h-full flex flex-col">
 
-<!-- ADMIN PANEL -->
-<div id="adminPanel" class="panel">
-<div class="panel-box">
-<h2>📊 Dashboard Admin</h2>
+  <!-- TOAST -->
+  <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50"></div>
 
-<p>🟢 Connectés maintenant : <span id="onlineCount">0</span></p>
-<p>👥 Total utilisateurs : <span id="totalUsers">0</span></p>
+  <!-- ONBOARD -->
+  <div id="screen-onboard" class="h-full flex flex-col items-center justify-center p-6">
 
-<hr style="margin:10px 0">
+    <h1 class="text-3xl font-black mb-6">👑 Afro Concours</h1>
 
-<h3>🧠 Validation missions</h3>
-<div id="pendingList"></div>
+    <input id="input-pseudo" class="p-3 mb-2 w-full bg-gray-900 rounded" placeholder="Pseudo">
+    <input id="input-numero" class="p-3 mb-2 w-full bg-gray-900 rounded" placeholder="WhatsApp">
+    <input id="input-email" class="p-3 mb-4 w-full bg-gray-900 rounded" placeholder="Email">
 
-<button onclick="closeAdmin()" style="margin-top:10px;background:red;padding:8px;border:none;color:white;border-radius:8px;">Fermer</button>
-</div>
-</div>
+    <button id="btn-start" class="bg-yellow-400 text-black font-bold p-3 rounded w-full">
+      Commencer 🚀
+    </button>
 
-<!-- APP -->
-<div class="p-4">
+    <button id="btn-login" class="mt-2 border p-3 rounded w-full">
+      Connexion
+    </button>
 
-<h1 class="text-2xl font-bold">👑 Afro Concours</h1>
+  </div>
 
-<input id="pseudo" placeholder="Pseudo" class="w-full p-2 mt-2 text-black">
-<input id="numero" placeholder="Numéro" class="w-full p-2 mt-2 text-black">
-<input id="email" placeholder="Email" class="w-full p-2 mt-2 text-black">
+  <!-- MAIN -->
+  <div id="screen-main" class="hidden flex flex-col h-full">
 
-<button onclick="register()" class="bg-purple-600 w-full p-2 mt-3">Commencer</button>
+    <header class="p-3 flex justify-between bg-purple-950">
+      <div>👑 Afro Concours</div>
 
-<hr class="my-4">
+      <button id="adminBtn" class="text-yellow-400 hidden" onclick="switchTab('admin')">
+        ADMIN
+      </button>
+    </header>
 
-<div id="userBox"></div>
+    <div class="flex-1 p-3 overflow-auto">
+
+      <!-- HOME -->
+      <div id="tab-home">
+        <h2 class="text-xl font-bold">Bienvenue 👑</h2>
+        <p id="user-info"></p>
+      </div>
+
+      <!-- ADMIN -->
+      <div id="tab-admin" class="hidden">
+        <h2 class="text-xl font-bold mb-3">📊 DASHBOARD ADMIN</h2>
+
+        <div class="space-y-2">
+          <div class="p-3 bg-gray-900 rounded">👥 Users: <span id="stat-users"></span></div>
+          <div class="p-3 bg-gray-900 rounded">💰 Points: <span id="stat-points"></span></div>
+          <div class="p-3 bg-gray-900 rounded">🎯 Missions: <span id="stat-missions"></span></div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
 
 </div>
 
 <script>
-// DATA
-let users = JSON.parse(localStorage.getItem("users")||"[]")
-let current = JSON.parse(localStorage.getItem("current")||"null")
 
-// ONLINE SYSTEM
-function updateOnline(){
-  let now = Date.now()
-  if(current){
-    current.lastSeen = now
-    localStorage.setItem("current",JSON.stringify(current))
+const ADMIN_EMAIL = "overzatchy@gmail.com";
+const FORM_ENDPOINT = "https://formspree.io/f/mqewpdyb";
+
+let allUsers = JSON.parse(localStorage.getItem("afro_users") || "[]");
+let userData = JSON.parse(localStorage.getItem("afro_current_user") || "null");
+let currentTab = "home";
+
+function toast(msg){
+  const t = document.createElement("div");
+  t.innerText = msg;
+  t.className = "bg-green-600 text-white p-2 rounded mb-2";
+  document.getElementById("toast-container").appendChild(t);
+  setTimeout(()=>t.remove(),2000);
+}
+
+function save(){
+  localStorage.setItem("afro_users", JSON.stringify(allUsers));
+  localStorage.setItem("afro_current_user", JSON.stringify(userData));
+}
+
+async function sendForm(data){
+  try {
+    await fetch(FORM_ENDPOINT, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(data)
+    });
+  } catch(e){}
+}
+
+// INSCRIPTION
+document.getElementById("btn-start").onclick = async () => {
+
+  const pseudo = document.getElementById("input-pseudo").value.trim();
+  const numero = document.getElementById("input-numero").value.trim();
+  const email = document.getElementById("input-email").value.trim();
+
+  if(!pseudo || !numero || !email){
+    toast("❌ Champs manquants");
+    return;
   }
 
-  users = users.map(u=>{
-    u.lastSeen = u.lastSeen || 0
-    return u
-  })
-
-  localStorage.setItem("users",JSON.stringify(users))
-}
-
-setInterval(updateOnline,5000)
-
-// COUNT ONLINE
-function getOnline(){
-  let now = Date.now()
-  return users.filter(u=>now - (u.lastSeen||0) < 30000).length
-}
-
-// REGISTER
-function register(){
-  let u = {
-    pseudo: pseudo.value,
-    numero: numero.value,
-    email: email.value,
+  userData = {
+    pseudo,
+    numero,
+    email,
     kit:0,
-    missions:[],
-    lastSeen:Date.now(),
-    pending:[]
+    missions:[]
+  };
+
+  allUsers.push(userData);
+  save();
+
+  await sendForm({
+    type:"register",
+    pseudo,
+    numero,
+    email
+  });
+
+  document.getElementById("screen-onboard").classList.add("hidden");
+  document.getElementById("screen-main").classList.remove("hidden");
+
+  if(email === ADMIN_EMAIL){
+    document.getElementById("adminBtn").classList.remove("hidden");
   }
 
-  users.push(u)
-  current = u
+  toast("👑 Bienvenue " + pseudo);
 
-  localStorage.setItem("users",JSON.stringify(users))
-  localStorage.setItem("current",JSON.stringify(current))
+  render();
+};
 
-  render()
+// LOGIN AUTO
+function autoLogin(){
+  if(userData){
+    document.getElementById("screen-onboard").classList.add("hidden");
+    document.getElementById("screen-main").classList.remove("hidden");
+
+    if(userData.email === ADMIN_EMAIL){
+      document.getElementById("adminBtn").classList.remove("hidden");
+    }
+
+    render();
+  }
 }
 
-// RENDER
 function render(){
-  document.getElementById("userBox").innerHTML =
-  current ? `
-  <h2>Bienvenue 👑 ${current.pseudo}</h2>
-  <p>Kit Boy: ${current.kit}</p>
-  <button onclick="sendMission()" class="bg-green-600 p-2">Mission test</button>
-  ` : ""
+
+  document.getElementById("user-info").innerText =
+    userData?.pseudo + " | " + userData?.email;
+
+  // admin stats
+  let totalPoints = 0;
+  let totalMissions = 0;
+
+  allUsers.forEach(u=>{
+    totalPoints += u.kit || 0;
+    totalMissions += u.missions?.length || 0;
+  });
+
+  document.getElementById("stat-users").innerText = allUsers.length;
+  document.getElementById("stat-points").innerText = totalPoints;
+  document.getElementById("stat-missions").innerText = totalMissions;
 }
 
-// MISSION
-function sendMission(){
-  current.pending.push({
-    text:"Mission test",
-    status:"pending"
-  })
+// SWITCH TAB
+function switchTab(tab){
+  document.getElementById("tab-home").classList.add("hidden");
+  document.getElementById("tab-admin").classList.add("hidden");
 
-  users = users.map(u=>u.pseudo==current.pseudo?current:u)
-  localStorage.setItem("users",JSON.stringify(users))
-  alert("Mission envoyée 🧠")
+  if(tab === "home") document.getElementById("tab-home").classList.remove("hidden");
+  if(tab === "admin") document.getElementById("tab-admin").classList.remove("hidden");
+
+  currentTab = tab;
 }
 
-// ADMIN
-function openAdmin(){
-  document.getElementById("adminPanel").style.display="flex"
-  renderAdmin()
-}
-
-function closeAdmin(){
-  document.getElementById("adminPanel").style.display="none"
-}
-
-function renderAdmin(){
-  document.getElementById("onlineCount").innerText = getOnline()
-  document.getElementById("totalUsers").innerText = users.length
-
-  let list = users.flatMap(u=>
-    (u.pending||[]).map((p,i)=>`
-      <div style="border:1px solid #333;padding:5px;margin:5px">
-        <b>${u.pseudo}</b> → ${p.text}
-        <button onclick="validate('${u.pseudo}',${i})">✔ Valider</button>
-      </div>
-    `)
-  ).join("")
-
-  document.getElementById("pendingList").innerHTML = list || "Aucune mission"
-}
-
-// VALIDATE
-function validate(pseudo,index){
-  let u = users.find(x=>x.pseudo==pseudo)
-  if(u){
-    u.kit += 10
-    u.pending.splice(index,1)
-    localStorage.setItem("users",JSON.stringify(users))
-    renderAdmin()
-  }
-}
-
-// LIVE REFRESH
-setInterval(renderAdmin,2000)
-
-// INIT
-if(current) render()
+autoLogin();
 
 </script>
 
