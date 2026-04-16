@@ -1,101 +1,69 @@
 <!doctype html>
 <html lang="fr" class="h-full">
- <head>
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Afro Concours 👑</title>
+
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-  <script src="/_sdk/element_sdk.js"></script>
+
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <style>
-html, body { height: 100%; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
-* { box-sizing: border-box; }
-
-@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-@keyframes pulseGlow { 0%,100%{box-shadow:0 0 20px rgba(124,58,237,0.3)} 50%{box-shadow:0 0 40px rgba(124,58,237,0.6)} }
-@keyframes slideUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
-@keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-
-.float { animation: float 3s ease-in-out infinite; }
-.pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
-.slide-up { animation: slideUp 0.5s ease-out forwards; }
-.shimmer-bg { background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%); background-size: 200% 100%; animation: shimmer 2s infinite; }
-
-.toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; }
-.toast { padding: 12px 24px; border-radius: 12px; color: white; font-weight: 600; animation: slideUp 0.3s ease-out; }
-
-.confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: center; justify-content: center; animation: slideUp 0.2s; }
-
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-
-button:disabled { opacity: 0.6; cursor: not-allowed; }
+    html, body { height: 100%; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+    * { box-sizing: border-box; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
   </style>
- </head>
+</head>
 
- <body class="h-full bg-black text-white">
-  <div id="app" class="h-full w-full flex flex-col overflow-hidden">
+<body class="h-full bg-black text-white">
+
+<div id="app" class="h-full w-full flex flex-col overflow-hidden">
+
+<!-- ONBOARD -->
+<div id="screen-onboard" class="h-full flex flex-col items-center justify-center p-6">
+  <h1 class="text-3xl font-bold mb-6">Afro Concours 👑</h1>
+
+  <input id="input-pseudo" placeholder="Pseudo" class="mb-3 p-3 rounded bg-violet-900/40 w-full max-w-xs">
+  <input id="input-numero" placeholder="Numéro" class="mb-3 p-3 rounded bg-violet-900/40 w-full max-w-xs">
+  <input id="input-email" placeholder="Email" class="mb-3 p-3 rounded bg-violet-900/40 w-full max-w-xs">
+
+  <button id="btn-start" class="bg-yellow-400 text-black font-bold px-6 py-3 rounded w-full max-w-xs">
+    Commencer 🚀
+  </button>
+</div>
+
+<!-- MAIN -->
+<div id="screen-main" style="display:none;" class="p-4">
+  <h2>Bienvenue 👑</h2>
+</div>
+
+</div>
 
 <script>
+/* =======================
+   FORMPSREE (AJOUT CLEAN)
+======================= */
 const FORMSPREE_URL = "https://formspree.io/f/mqewpdyb";
-</script>
 
-<script>
-// CONFIG
-const defaultConfig = {
-  app_title: 'Afro Concours 👑',
-  welcome_text: 'Gagne des Kit Boy, deviens VIP!',
-};
-
-let userData = null;
+/* =======================
+   DATA
+======================= */
 let allUsers = [];
-let currentTab = 'home';
-let confirmCallback = null;
+let userData = null;
 let isSubmitting = false;
-const ADMIN_EMAIL = 'overzatchy@gmail.com';
 
-const MISSIONS = [
-  { id: 'survey1', label: '📝 Sondage : Ta musique préférée ?', points: 1, prompt: 'Quel est ton artiste africain préféré ?' },
-  { id: 'survey2', label: '📝 Sondage : Plat africain favori ?', points: 1, prompt: 'Quel plat africain aimes-tu le plus ?' },
-  { id: 'watch1', label: '📺 Regarde du contenu (30s)', points: 1, prompt: 'Envoie un lien de la vidéo regardée' },
-  { id: 'quiz1', label: '🧠 Quiz : Culture africaine', points: 15, prompt: 'Nom d\'une capitale africaine ?' },
-  { id: 'invite1', label: '👥 Invite un ami', points: 3, prompt: 'Pseudo de l\'ami invité ?' },
-  { id: 'daily1', label: '✨ Connexion quotidienne', points: 1, prompt: 'Quelle heure es-tu connecté ?' },
-  { id: 'share1', label: '📤 Partage ta progression', points: 1, prompt: 'Où as-tu partagé ta progression ?' },
-  { id: 'like1', label: '❤️ Like 10 posts', points: 1, prompt: 'Lien d\'un post liké ?' },
-  { id: 'follow1', label: '👤 Follow 5 comptes', points: 1, prompt: 'Pseudo du compte suivi ?' },
-  { id: 'hard1', label: '⭐ Cumule 5 jours consec', points: 3, prompt: 'Depuis combien de jours ?' },
-  { id: 'tiktok1', label: '🎵 Crée un TikTok #AfroConcours', points: 2, prompt: 'Lien de ton TikTok ?' },
-  { id: 'reels1', label: '📹 Crée un Reel Instagram', points: 2, prompt: 'Lien de ton Reel ?' },
-  { id: 'vote1', label: '🗳️ Participe au vote du jour', points: 1, prompt: 'Pour quel choix as-tu voté ?' },
-  { id: 'comment1', label: '💬 Commente 5 posts', points: 1, prompt: 'Ton meilleur commentaire ?' },
-  { id: 'story1', label: '📸 Partage une story', points: 1, prompt: 'Description de ta story ?' },
-  { id: 'invite5', label: '👥 Invite 5 amis', points: 5, prompt: 'Combien d\'amis invités ?' },
-  { id: 'game1', label: '🎮 Joue au jeu du jour', points: 2, prompt: 'Quel est ton score ?' },
-  { id: 'challenge1', label: '🎯 Participe au challenge', points: 3, prompt: 'Décris ta participation' },
-  { id: 'event1', label: '🎪 Rejoins un événement live', points: 2, prompt: 'À quelle heure as-tu rejoint ?' },
-  { id: 'feedback1', label: '📋 Donne ton avis sur l\'app', points: 1, prompt: 'Qu\'as-tu aimé ?' },
-  { id: 'badge1', label: '🏆 Débloque un badge', points: 2, prompt: 'Quel badge as-tu débloqué ?' },
-  { id: 'stream1', label: '🔴 Regarde un live (15min)', points: 2, prompt: 'Pseudo du streamer ?' },
-  { id: 'refer1', label: '🔗 Partage ton lien de ref', points: 1, prompt: 'Où as-tu partagé ?' },
-  { id: 'leaderboard1', label: '📊 Entre dans le top 100', points: 3, prompt: 'Quel rang as-tu atteint ?' },
-  { id: 'vip1', label: '👑 Prépare-toi pour VIP', points: 1, prompt: 'T\'es-tu connecté aujourd\'hui ?' },
-  { id: 'afro1', label: '📱 Follow @afro.boy sur Instagram', points: 10, prompt: 'Confirme que tu as suivi @afro.boy', needsVerification: true }
-];
-
-// 🔥 RESTE DU CODE IDENTIQUE JUSQU’À handleSubmit
-
-async function handleSubmit(event) {
-  event.preventDefault();
+/* =======================
+   SUBMIT INSCRIPTION
+======================= */
+document.getElementById("btn-start").addEventListener("click", async () => {
 
   if (isSubmitting) return;
 
-  const pseudo = document.getElementById('input-pseudo').value.trim();
-  const numero = document.getElementById('input-numero').value.trim();
-  const email = document.getElementById('input-email').value.trim();
+  const pseudo = document.getElementById("input-pseudo").value.trim();
+  const numero = document.getElementById("input-numero").value.trim();
+  const email = document.getElementById("input-email").value.trim();
 
   if (!pseudo || !numero || !email) return;
 
@@ -105,41 +73,38 @@ async function handleSubmit(event) {
     pseudo,
     numero,
     email,
-    kit_boy: 0,
-    user_id: 'AC-' + Math.random().toString(36).substr(2, 8).toUpperCase()
+    user_id: "AC-" + Math.random().toString(36).substr(2, 8).toUpperCase(),
+    kit_boy: 0
   };
 
   allUsers.push(newUser);
   userData = newUser;
 
-  saveToLocalStorage();
-
-  // ✅ FORMPSREE INTEGRATION AJOUTÉE
+  /* =======================
+     FORMPSREE ENVOI
+  ======================= */
   fetch(FORMSPREE_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({
-      pseudo: pseudo,
-      numero: numero,
-      email: email,
+      pseudo: newUser.pseudo,
+      numero: newUser.numero,
+      email: newUser.email,
       user_id: newUser.user_id
     })
   }).catch(err => console.log("Formspree error:", err));
 
-  document.getElementById('input-pseudo').value = '';
-  document.getElementById('input-numero').value = '';
-  document.getElementById('input-email').value = '';
-
-  document.getElementById('screen-onboard').style.display = 'none';
-  document.getElementById('screen-main').style.display = 'flex';
+  /* =======================
+     SWITCH UI
+  ======================= */
+  document.getElementById("screen-onboard").style.display = "none";
+  document.getElementById("screen-main").style.display = "block";
 
   isSubmitting = false;
-  renderAll();
-}
-
-// RESTE DU CODE INCHANGÉ (UI, missions, render, etc.)
+});
 </script>
 
-  </div>
- </body>
+</body>
 </html>
