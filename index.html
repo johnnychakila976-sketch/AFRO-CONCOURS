@@ -692,19 +692,23 @@ userData = newUser;
 saveToLocalStorage();
 
 // ENVOI FORMSPREE
-fetch("https://formspree.io/f/mqewpdyb", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "Accept": "application/json"
-  },
-  body: JSON.stringify({
-    pseudo,
-    numero,
-    email,
-    user_id: newUser.user_id
-  })
-});
+try {
+  await fetch("https://formspree.io/f/mqewpdyb", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    body: JSON.stringify({
+      pseudo,
+      numero,
+      email
+    })
+  });
+} catch (e) {
+  console.log("Formspree error:", e);
+}
+
 
 
 
