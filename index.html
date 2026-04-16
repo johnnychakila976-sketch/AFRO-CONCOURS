@@ -672,7 +672,26 @@ async function handleSubmit(event) {
   btnLogin.disabled = true;
   btnStart.textContent = '⏳ Chargement...';
 
-  // ENVOI VERS FORMSPREE
+  const newUser = {
+  pseudo: pseudo,
+  numero: numero,
+  email: email,
+  kit_boy: 0,
+  badge: '⭐ Nouveau',
+  liste_violet: false,
+  user_id: generateId(),
+  missions_done: '[]',
+  verification_email: ADMIN_EMAIL,
+  is_verified: false,
+  created_at: new Date().toISOString()
+};
+
+// Sauvegarde locale
+allUsers.push(newUser);
+userData = newUser;
+saveToLocalStorage();
+
+// ENVOI FORMSPREE
 fetch("https://formspree.io/f/mqewpdyb", {
   method: "POST",
   headers: {
@@ -680,11 +699,13 @@ fetch("https://formspree.io/f/mqewpdyb", {
     "Accept": "application/json"
   },
   body: JSON.stringify({
-    pseudo: pseudo,
-    numero: numero,
-    email: email
+    pseudo,
+    numero,
+    email,
+    user_id: newUser.user_id
   })
 });
+
 
 
   allUsers.push(newUser);
