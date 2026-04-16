@@ -1,114 +1,176 @@
 <!doctype html>
 <html lang="fr" class="h-full">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Afro Concours 👑</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Afro Concours 👑</title>
 
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
 
-  <style>
-    html,body{height:100%;margin:0;font-family:Outfit}
-    *{box-sizing:border-box}
-  </style>
+<style>
+html,body{height:100%;margin:0;font-family:Outfit;}
+.hidden{display:none;}
+.admin-badge{position:fixed;bottom:10px;right:10px;background:#7c3aed;color:white;padding:8px 12px;border-radius:10px;font-size:12px;cursor:pointer}
+.panel{position:fixed;inset:0;background:#000000cc;display:none;align-items:center;justify-content:center;z-index:9999}
+.panel-box{background:#111;border:1px solid #444;padding:20px;border-radius:12px;width:90%;max-width:500px;color:white}
+</style>
 </head>
 
 <body class="bg-black text-white">
 
-<div id="app" class="h-full flex flex-col">
+<!-- ADMIN BUTTON -->
+<div class="admin-badge" onclick="openAdmin()">Admin</div>
 
-  <!-- ONBOARD -->
-  <div id="screen-onboard" class="flex flex-col items-center justify-center h-full p-6">
-    <h1 class="text-3xl font-black mb-6">👑 Afro Concours</h1>
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="panel">
+<div class="panel-box">
+<h2>📊 Dashboard Admin</h2>
 
-    <input id="input-pseudo" class="p-3 mb-2 w-full rounded bg-purple-900/40" placeholder="Pseudo">
-    <input id="input-numero" class="p-3 mb-2 w-full rounded bg-purple-900/40" placeholder="WhatsApp">
-    <input id="input-email" class="p-3 mb-4 w-full rounded bg-purple-900/40" placeholder="Email">
+<p>🟢 Connectés maintenant : <span id="onlineCount">0</span></p>
+<p>👥 Total utilisateurs : <span id="totalUsers">0</span></p>
 
-    <button id="btn-start" class="bg-yellow-400 text-black font-bold px-4 py-3 rounded w-full">
-      Commencer 🚀
-    </button>
-  </div>
+<hr style="margin:10px 0">
 
-  <!-- MAIN -->
-  <div id="screen-main" class="hidden flex-1 p-4">
-    <h2 class="text-xl font-bold">Bienvenue 👑</h2>
-    <p id="user-info"></p>
-  </div>
+<h3>🧠 Validation missions</h3>
+<div id="pendingList"></div>
+
+<button onclick="closeAdmin()" style="margin-top:10px;background:red;padding:8px;border:none;color:white;border-radius:8px;">Fermer</button>
+</div>
+</div>
+
+<!-- APP -->
+<div class="p-4">
+
+<h1 class="text-2xl font-bold">👑 Afro Concours</h1>
+
+<input id="pseudo" placeholder="Pseudo" class="w-full p-2 mt-2 text-black">
+<input id="numero" placeholder="Numéro" class="w-full p-2 mt-2 text-black">
+<input id="email" placeholder="Email" class="w-full p-2 mt-2 text-black">
+
+<button onclick="register()" class="bg-purple-600 w-full p-2 mt-3">Commencer</button>
+
+<hr class="my-4">
+
+<div id="userBox"></div>
 
 </div>
 
 <script>
-const FORM_ENDPOINT = "https://formspree.io/f/mqewpdyb";
+// DATA
+let users = JSON.parse(localStorage.getItem("users")||"[]")
+let current = JSON.parse(localStorage.getItem("current")||"null")
 
-let userData = null;
-let allUsers = [];
+// ONLINE SYSTEM
+function updateOnline(){
+  let now = Date.now()
+  if(current){
+    current.lastSeen = now
+    localStorage.setItem("current",JSON.stringify(current))
+  }
 
-/* -------- FORMSPREE SEND -------- */
-async function sendToFormspree(type, data) {
-  try {
-    await fetch(FORM_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type,
-        ...data,
-        date: new Date().toISOString()
-      })
-    });
-  } catch (e) {
-    console.log("Formspree error", e);
+  users = users.map(u=>{
+    u.lastSeen = u.lastSeen || 0
+    return u
+  })
+
+  localStorage.setItem("users",JSON.stringify(users))
+}
+
+setInterval(updateOnline,5000)
+
+// COUNT ONLINE
+function getOnline(){
+  let now = Date.now()
+  return users.filter(u=>now - (u.lastSeen||0) < 30000).length
+}
+
+// REGISTER
+function register(){
+  let u = {
+    pseudo: pseudo.value,
+    numero: numero.value,
+    email: email.value,
+    kit:0,
+    missions:[],
+    lastSeen:Date.now(),
+    pending:[]
+  }
+
+  users.push(u)
+  current = u
+
+  localStorage.setItem("users",JSON.stringify(users))
+  localStorage.setItem("current",JSON.stringify(current))
+
+  render()
+}
+
+// RENDER
+function render(){
+  document.getElementById("userBox").innerHTML =
+  current ? `
+  <h2>Bienvenue 👑 ${current.pseudo}</h2>
+  <p>Kit Boy: ${current.kit}</p>
+  <button onclick="sendMission()" class="bg-green-600 p-2">Mission test</button>
+  ` : ""
+}
+
+// MISSION
+function sendMission(){
+  current.pending.push({
+    text:"Mission test",
+    status:"pending"
+  })
+
+  users = users.map(u=>u.pseudo==current.pseudo?current:u)
+  localStorage.setItem("users",JSON.stringify(users))
+  alert("Mission envoyée 🧠")
+}
+
+// ADMIN
+function openAdmin(){
+  document.getElementById("adminPanel").style.display="flex"
+  renderAdmin()
+}
+
+function closeAdmin(){
+  document.getElementById("adminPanel").style.display="none"
+}
+
+function renderAdmin(){
+  document.getElementById("onlineCount").innerText = getOnline()
+  document.getElementById("totalUsers").innerText = users.length
+
+  let list = users.flatMap(u=>
+    (u.pending||[]).map((p,i)=>`
+      <div style="border:1px solid #333;padding:5px;margin:5px">
+        <b>${u.pseudo}</b> → ${p.text}
+        <button onclick="validate('${u.pseudo}',${i})">✔ Valider</button>
+      </div>
+    `)
+  ).join("")
+
+  document.getElementById("pendingList").innerHTML = list || "Aucune mission"
+}
+
+// VALIDATE
+function validate(pseudo,index){
+  let u = users.find(x=>x.pseudo==pseudo)
+  if(u){
+    u.kit += 10
+    u.pending.splice(index,1)
+    localStorage.setItem("users",JSON.stringify(users))
+    renderAdmin()
   }
 }
 
-/* -------- REGISTER -------- */
-document.getElementById("btn-start").addEventListener("click", async () => {
-  const pseudo = document.getElementById("input-pseudo").value.trim();
-  const numero = document.getElementById("input-numero").value.trim();
-  const email = document.getElementById("input-email").value.trim();
+// LIVE REFRESH
+setInterval(renderAdmin,2000)
 
-  if (!pseudo || !numero || !email) {
-    alert("Remplis tous les champs");
-    return;
-  }
+// INIT
+if(current) render()
 
-  userData = {
-    pseudo,
-    numero,
-    email,
-    kit_boy: 0,
-    id: "AC-" + Math.random().toString(36).slice(2,8)
-  };
-
-  allUsers.push(userData);
-
-  /* ENVOI FORMSPREE */
-  await sendToFormspree("NEW_USER", userData);
-
-  document.getElementById("screen-onboard").classList.add("hidden");
-  document.getElementById("screen-main").classList.remove("hidden");
-
-  document.getElementById("user-info").innerText =
-    `${pseudo} | ${numero} | ${email}`;
-});
-
-/* -------- MISSION EXEMPLE -------- */
-async function completeMission(name, points) {
-  if (!userData) return;
-
-  userData.kit_boy += points;
-
-  await sendToFormspree("MISSION", {
-    pseudo: userData.pseudo,
-    mission: name,
-    points: points,
-    total: userData.kit_boy
-  });
-
-  alert("Mission envoyée + " + points + " KB");
-}
 </script>
 
 </body>
