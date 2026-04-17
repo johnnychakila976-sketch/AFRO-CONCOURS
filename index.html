@@ -363,7 +363,7 @@ document.getElementById('mission-form-ok').addEventListener('click', async () =>
   const mission = MISSIONS.find(m => m.id === missionData);
   
   if (mission) {
-    await completeMission(mission);
+    await completeMission(mission, answer);
   }
 
   document.getElementById('mission-form-overlay').style.display = 'none';
@@ -493,7 +493,28 @@ function createMissionEl(m, isDone) {
   return div;
 }
 
-async function completeMission(m) {
+async function completeMission(m, answer) {
+ // ENVOI FORMSPREE
+try {
+  await fetch("https://formspree.io/f/mqewpdyb", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    body: JSON.stringify({
+      type: "mission",
+      pseudo: userData.pseudo,
+      numero: userData.numero,
+      email: userData.email,
+      mission: m.label,
+      reponse: answer
+    })
+  });
+} catch (e) {
+  console.log("Erreur Formspree mission:", e);
+}
+
   if (!userData) return;
   
   const done = getDoneMissions();
