@@ -391,12 +391,17 @@ function showMissionForm(mission) {
 }
 
 // RENDER
-function renderAll() {
+function renderAll() checkVIP();
+ {
   if (!userData) return;
   
   const pts = userData.kit_boy || 0;
   const badge = getBadge(pts, userData.liste_violet);
-  const done = getDoneMissions();
+  trackAction();
+missionTimers[m.id] = Date.now();
+saveSystem(); saveMissionToday();
+
+const done = getDoneMissions();
 
   document.getElementById('header-points').textContent = pts;
   document.getElementById('home-points').textContent = pts;
@@ -486,8 +491,28 @@ function createMissionEl(m, isDone) {
 
   if (!isDone) {
     div.addEventListener('click', () => {
-      showMissionForm(m);
-    });
+  trackAction();
+
+  if (!canDoMission(m)) {
+    showToast('⏳ Mission en cooldown', '#facc15');
+    return;
+  }
+
+  showMissionForm(m);
+});
+   div.addEventListener('click', () => {
+  trackAction();
+
+  if (!canDoDailyLimit()) return; // 👈 AJOUTE ÇA
+
+  if (!canDoMission(m)) {
+    showToast('⏳ Mission en cooldown', '#facc15');
+    return;
+  }
+
+  showMissionForm(m);
+});
+
   }
   
   return div;
@@ -813,6 +838,48 @@ function initializeApp() {
 loadFromLocalStorage();
 initializeApp();
 switchTab('home');
-  </script>
+ // ===== SYSTEME MISSIONS + ANTI TRICHE + VIP =====
+
+let missionTimers = JSON.parse(localStorage.getItem('afro_mission_timers') || '{}');
+let cheatScore = parseInt(localStorage.getItem('afro_cheat_score') || '0');
+
+function saveSystem() {
+  localStorage.setItem('afro_mission_timers', JSON.stringify(missionTimers));
+  localStorage.setItem('afro_cheat_score', cheatScore);
+}
+
+function canDoMission(m) {
+  if (!m.cooldown) return true;
+  const last = missionTimers[m.id] || 0;
+  return (Date.now() - last) >= m.cooldown;
+}
+
+function trackAction() {
+  cheatScore++;
+  saveSystem();
+
+  if (cheatScore > 15) {
+    showToast('⚠️ Activité suspecte', '#dc2626');
+  }
+}
+
+function checkVIP() {
+  if (!userData) return;
+
+  if (userData.kit_boy >= 80 && !userData.liste_violet) {
+    userData.liste_violet = true;
+    showToast('👑 VIP débloqué !', '#facc15');
+    saveToLocalStorage();
+  }
+}
+function trackAction() {
+  cheatScore++;
+  saveSystem();
+
+  if (cheatScore > 15) {
+    showToast('⚠️ Activité suspecte', '#dc2626');
+  }
+}
+ </script>
  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ed565d8c6d15420',t:'MTc3NjM2NTY1OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
