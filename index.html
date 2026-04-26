@@ -209,7 +209,70 @@ const defaultConfig = {
 };
 
 let userData = null;
+let allUsers = []; 
+
+// SYSTEM MISSIONS
+let missionTimers = JSON.parse(localStorage.getItem('missionTimers') || '{}');
+let dailyCounter = JSON.parse(localStorage.getItem('dailyCounter') || '{}');
+
+let lastClick = 0; // ✅ IMPORTANT (anti spam)
+
+// ANTI SPAM
+function antiSpam() {
+  const now = Date.now();
+
+  if (now - lastClick < 500) {
+    return false;
+  }
+
+  lastClick = now;
+  return true;
+}
+
+// LIMITE JOUR
+function canDoDailyLimit() {
+  const today = new Date().toDateString();
+
+  if (!dailyCounter[today]) {
+    dailyCounter[today] = 0;
+  }
+
+  if (dailyCounter[today] >= 8) {
+    showToast('⛔ Limite 8 missions atteinte aujourd’hui', '#dc2626');
+    return false;
+  }
+
+  dailyCounter[today]++;
+  localStorage.setItem('dailyCounter', JSON.stringify(dailyCounter));
+  return true;
+}
+
+// COOLDOWN
+function canDoMission(mission) {
+  const now = Date.now();
+
+  const cooldowns = {
+    daily1: 86400000, // 24h
+    watch1: 3600000,  // 1h
+    invite1: 3600000
+  };
+
+  const last = missionTimers[mission.id] || 0;
+  const cd = cooldowns[mission.id] || 0;
+
+  if (cd > 0 && now - last < cd) {
+    return false;
+  }
+
+  missionTimers[mission.id] = now;
+  localStorage.setItem('missionTimers', JSON.stringify(missionTimers));
+
+  return true;
+}
+   
+let userData = null;
 let allUsers = [];
+let lastClick = 0;
 let currentTab = 'home';
 let confirmCallback = null;
 let isSubmitting = false;
@@ -488,15 +551,14 @@ function createMissionEl(m, isDone) {
 
   if (!antiSpam()) return;
 
-  trackAction();
-
   if (!canDoDailyLimit()) return;
 
   if (!canDoMission(m)) {
     showToast('⏳ Mission en cooldown', '#facc15');
     return;
   }
-
+     
+ trackAction();
   showMissionForm(m);
 });
 
