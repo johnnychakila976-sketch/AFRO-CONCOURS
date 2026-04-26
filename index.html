@@ -485,8 +485,21 @@ function createMissionEl(m, isDone) {
 
   if (!isDone) {
     div.addEventListener('click', () => {
-      showMissionForm(m);
-    });
+
+  if (!antiSpam()) return;
+
+  trackAction();
+
+  if (!canDoDailyLimit()) return;
+
+  if (!canDoMission(m)) {
+    showToast('⏳ Mission en cooldown', '#facc15');
+    return;
+  }
+
+  showMissionForm(m);
+});
+
   }
   
   return div;
