@@ -264,21 +264,7 @@ function canDoMission(mission) {
     return false;
   }
 
-  missionTimers[mission.id] = now;
-  localStorage.setItem('missionTimers', JSON.stringify(missionTimers));
-
   return true;
-}
-   
-function showToast(text, color = "#7c3aed") {
-  const el = document.createElement("div");
-  el.className = "toast";
-  el.style.background = color;
-  el.textContent = text;
-
-  document.getElementById("toast-container").appendChild(el);
-
-  setTimeout(() => el.remove(), 3000);
 }
   
 let userData = null;
@@ -608,6 +594,10 @@ try {
     return;
   }
   done.push(m.id);
+ const now = Date.now();
+missionTimers[m.id] = now;
+localStorage.setItem('missionTimers', JSON.stringify(missionTimers));
+
   let newPoints = userData.kit_boy || 0;
 
 if (m.needsVerification) {
@@ -727,9 +717,6 @@ function clearErrors() {
 
 async function handleSubmit(event) {
   event.preventDefault();
- 
-  if (Date.now() - lastClick < 1000) return;
-lastClick = Date.now();
 
   if (isSubmitting) return;
   
@@ -859,25 +846,6 @@ function loadFromLocalStorage() {
   }
 }
    
-function loadFromLocalStorage() {
-  try {
-    allUsers = JSON.parse(localStorage.getItem('afro_users')) || [];
-    userData = JSON.parse(localStorage.getItem('afro_current_user')) || null;
-  } catch (e) {
-    allUsers = [];
-    userData = null;
-  }
-}
-   
-  const currentSaved = localStorage.getItem('afro_current_user');
-  if (currentSaved) {
-    try {
-      userData = JSON.parse(currentSaved);
-    } catch (e) {
-      userData = null;
-    }
-  }
-}
 
 function initializeApp() {
   loadFromLocalStorage();
