@@ -270,6 +270,17 @@ function canDoMission(mission) {
   return true;
 }
    
+function showToast(text, color = "#7c3aed") {
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.style.background = color;
+  el.textContent = text;
+
+  document.getElementById("toast-container").appendChild(el);
+
+  setTimeout(() => el.remove(), 3000);
+}
+  
 let userData = null;
 let allUsers = [];
 let lastClick = 0;
@@ -597,22 +608,21 @@ try {
     return;
   }
   done.push(m.id);
-  let newPoints = (userData.kit_boy || 0) + m.points;
-  
-  // Missions @afro.boy nécessitent vérification
-  if (m.needsVerification) {
-    showToast(`✉️ Réponse envoyée à ${ADMIN_EMAIL}!`, '#059669');
-    // Points seront ajoutés après vérification (simulation: garder temporairement)
-    userData.pending_verification = userData.pending_verification || [];
-    if (!userData.pending_verification.includes(m.id)) {
-      userData.pending_verification.push(m.id);
-    }
-    newPoints = (userData.kit_boy || 0);
-  } else {
-    // Missions normales: points immédiats
-    newPoints = (userData.kit_boy || 0) + m.points;
-    showToast(`✅ Mission complétée! +${m.points} Kit Boy`, '#059669');
+  let newPoints = userData.kit_boy || 0;
+
+if (m.needsVerification) {
+  showToast(`✉️ Réponse envoyée à ${ADMIN_EMAIL}!`, '#059669');
+
+  userData.pending_verification = userData.pending_verification || [];
+
+  if (!userData.pending_verification.includes(m.id)) {
+    userData.pending_verification.push(m.id);
   }
+
+} else {
+  newPoints += m.points;
+  showToast(`✅ Mission complétée! +${m.points} Kit Boy`, '#059669');
+}
 
   const newBadge = getBadge(newPoints, userData.liste_violet);
 
@@ -717,7 +727,10 @@ function clearErrors() {
 
 async function handleSubmit(event) {
   event.preventDefault();
-  
+ 
+  if (Date.now() - lastClick < 1000) return;
+lastClick = Date.now();
+
   if (isSubmitting) return;
   
   const pseudo = document.getElementById('input-pseudo').value.trim();
@@ -786,6 +799,7 @@ userData = newUser;
 saveToLocalStorage();
 
 // ENVOI FORMSPREE
+ 
 try {
   await fetch("https://formspree.io/f/mqewpdyb", {
     method: "POST",
@@ -803,17 +817,11 @@ try {
   console.log("Formspree error:", e);
 }
 
-
-
-
-  allUsers.push(newUser);
-  userData = newUser;
-  saveToLocalStorage();
-
-  btnStart.disabled = false;
-  btnLogin.disabled = false;
-  btnStart.textContent = 'Commencer 🚀';
-  isSubmitting = false;
+// ⚠️ TOUJOURS débloquer après
+btnStart.disabled = false;
+btnLogin.disabled = false;
+btnStart.textContent = 'Commencer 🚀';
+isSubmitting = false;
 
   showToast('Bienvenue ' + pseudo + '! 👑', '#059669');
   document.getElementById('input-pseudo').value = '';
@@ -841,23 +849,26 @@ document.getElementById('input-email').addEventListener('keypress', (e) => {
 });
 
 // DATA - GITHUB VERSION
-function saveToLocalStorage() {
-  localStorage.setItem('afro_users', JSON.stringify(allUsers));
-  if (userData) {
-    localStorage.setItem('afro_current_user', JSON.stringify(userData));
+function loadFromLocalStorage() {
+  try {
+    allUsers = JSON.parse(localStorage.getItem('afro_users')) || [];
+    userData = JSON.parse(localStorage.getItem('afro_current_user')) || null;
+  } catch (e) {
+    allUsers = [];
+    userData = null;
   }
 }
-
+   
 function loadFromLocalStorage() {
-  const saved = localStorage.getItem('afro_users');
-  if (saved) {
-    try {
-      allUsers = JSON.parse(saved);
-    } catch (e) {
-      allUsers = [];
-    }
+  try {
+    allUsers = JSON.parse(localStorage.getItem('afro_users')) || [];
+    userData = JSON.parse(localStorage.getItem('afro_current_user')) || null;
+  } catch (e) {
+    allUsers = [];
+    userData = null;
   }
-  
+}
+   
   const currentSaved = localStorage.getItem('afro_current_user');
   if (currentSaved) {
     try {
@@ -883,9 +894,7 @@ function initializeApp() {
 }
 
 // Init
-loadFromLocalStorage();
 initializeApp();
-switchTab('home');
   </script>
  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ed565d8c6d15420',t:'MTc3NjM2NTY1OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
